@@ -1,36 +1,64 @@
-# QueryMind (Ollama Edition)
+# QueryMind — Local Agentic RAG Chatbot
 
-An agentic Retrieval-Augmented Generation (RAG) chatbot that answers questions by 
-pulling context from multiple sources instead of relying on a single static knowledge base — 
-running fully offline on local hardware.
+A fully local, agentic RAG (Retrieval-Augmented Generation) chatbot that intelligently 
+routes each query through multiple retrieval layers — running entirely offline with 
+no API keys and no cloud costs.
 
 ## Problem
-Most RAG chatbots depend on a single retrieval source and require cloud API calls, 
-which means no offline access and ongoing API costs. QueryMind solves this by combining 
-multiple retrieval layers and running entirely locally.
+Most RAG chatbots rely on a single knowledge source and cloud LLM APIs, which means 
+ongoing costs, no offline access, and no fallback when the retrieval source doesn't 
+have the answer. QueryMind solves this with a 4-layer agentic pipeline that runs 
+fully on local hardware.
 
-## Approach
-- **Multi-layer retrieval**: combines FAISS vector search (local knowledge base), 
-  live web search, and Wikipedia lookup to answer a wider range of queries accurately.
-- **Local LLM inference**: uses Ollama running the `phi3:mini` model, optimized to run 
-  on a GTX 1650 (4GB VRAM) — no cloud API dependency.
-- **Agentic pipeline**: query → multi-source retrieval → context ranking/assembly → 
-  local LLM generation.
+## Architecture
+1. **Document Search (FAISS)** — user-uploaded PDFs/text files are chunked, embedded 
+   (`sentence-transformers/all-MiniLM-L6-v2`), and indexed in FAISS for fast retrieval.
+2. **Local LLM Knowledge (Ollama · phi3:mini)** — for general questions, the model 
+   answers directly from its own knowledge, running locally on a GTX 1650 (4GB VRAM).
+3. **Live Web Search (DuckDuckGo)** — triggered automatically for time-sensitive 
+   queries (prices, news, "latest", "today", etc.) or when the LLM doesn't know the answer.
+4. **Wikipedia Fallback** — final fallback layer for factual queries when web search 
+   comes up empty.
+
+The engine decides which layer to use per-query — checking document relevance scores 
+first, then live-query keywords, before falling back through web search and Wikipedia.
 
 ## Tech Stack
-- Python
-- Ollama (phi3:mini)
-- FAISS (vector search)
-- LangChain (agent orchestration, if used)
-- Web search + Wikipedia APIs
+- **UI**: Streamlit (custom dark theme, real-time Ollama status indicator)
+- **LLM**: Ollama running `phi3:mini`, fully local — no API key required
+- **Vector Search**: FAISS + Sentence Transformers
+- **Document Loading**: LangChain (`PyPDFLoader`, `TextLoader`, `RecursiveCharacterTextSplitter`)
+- **Web Search**: DuckDuckGo Search API
+- **Facts Fallback**: Wikipedia API
+
+## Key Features
+- Adjustable retrieval settings (chunks to retrieve, temperature, relevance threshold)
+- Source attribution and relevance scoring shown in the UI for every answer
+- Automatic detection of "live" queries (news, prices, current events) to skip stale 
+  LLM knowledge and go straight to the web
+- Fully offline — no API keys, no per-token costs
 
 ## Key Outcomes / Learnings
-- Got a fully functional agentic RAG pipeline running end-to-end on constrained 
-  local hardware (4GB GPU).
-- Learned the trade-offs between model size, latency, and retrieval quality when 
-  optimizing for offline/resource-constrained inference.
-- Compared against a cloud-based version (Groq API + LLaMA 3.1 8B) to understand 
-  speed vs. cost vs. control trade-offs.
+- Built and optimized a functioning agentic RAG pipeline to run on a resource-constrained 
+  local GPU (4GB VRAM), balancing model size, latency, and answer quality.
+- Learned how to design a routing/decision layer that picks the right retrieval source 
+  automatically instead of hardcoding a single pipeline.
+- Compared this local setup against a cloud-based version (Groq API + LLaMA 3.1 8B) to 
+  understand trade-offs between speed, cost, and offline capability.
+
+## Setup
+
+```bash
+# 1. Install Ollama and pull the model
+ollama pull phi3:mini
+ollama serve
+
+# 2. Install Python dependencies
+pip install -r requirements.txt
+
+# 3. Run the app
+streamlit run app.py
+```
 
 ## Related
-See the companion cloud version: [querymind-groq](https://github.com/OduguKireetiReddy/querymind-groq)
+Cloud-based version using Groq API + LLaMA 3.1 8B: [querymind-groq](https://github.com/OduguKireetiReddy/querymind-groq)
