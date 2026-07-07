@@ -59,6 +59,3 @@ pip install -r requirements.txt
 # 3. Run the app
 streamlit run app.py
 ```
-
-## Related
-Cloud-based version using Groq API + LLaMA 3.1 8B: [querymind-groq](https://github.com/OduguKireetiReddy/querymind-groq)
